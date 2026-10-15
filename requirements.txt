@@ -1,0 +1,8 @@
+# Tested together on Python 3.12; use Python 3.11 or 3.12.
+streamlit==1.37.1
+pandas==2.2.2
+numpy==1.26.4
+plotly==5.24.1
+openpyxl==3.1.5
+requests==2.32.3
+yfinance==0.2.65
