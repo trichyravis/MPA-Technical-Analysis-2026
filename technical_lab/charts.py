@@ -49,8 +49,10 @@ def technical_chart(d, symbol, settings=Settings(), average="Both", bars=180):
         fig.add_trace(go.Bar(x=v.index,y=v.Volume,name="Volume",marker_color="#8BA7BE"),row=5,col=1)
     fig.update_layout(height=1050 if volume else 950,template="plotly_dark",hovermode="x unified",paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",
                       title=f"{symbol} · through {d.index[-1]:%d %b %Y}",
-                      xaxis_rangeslider_visible=False,legend=dict(orientation="h",y=1.08),
-                      margin=dict(l=30,r=20,t=130,b=40),font=dict(family="Arial",color=NAVY))
+                      xaxis_rangeslider_visible=False,
+                      # Legend sits above the first subplot title instead of overlapping it.
+                      legend=dict(orientation="h",yanchor="bottom",y=1.035,x=0),
+                      margin=dict(l=30,r=20,t=160,b=40),font=dict(family="Arial",color=NAVY))
     fig.update_xaxes(rangeslider_visible=False,showgrid=False)
     return fig
 

@@ -1,5 +1,6 @@
 """Run: streamlit run app.py. No API keys are needed for demo or CSV mode."""
 import hashlib
+import inspect
 import os
 from dataclasses import asdict
 from datetime import date, timedelta
@@ -187,7 +188,11 @@ for col,label,value in zip(columns,["Close","Daily change %",f"RSI {settings.rsi
     col.metric(label,fmt(value))
 st.caption(f"{symbol} · Latest completed bar: {actual_date} · Daily timeframe · {len(analyzed)} revealed observations")
 
-tab_chart,tab_screen,tab_replay,tab_learn,tab_data=st.tabs(["Chart & interpretation","Screener","Replay journal","Learn the calculations","Data & downloads"])
+# A keyed tab bar keeps the selected tab across reruns, so clicking "Run screener"
+# no longer throws the user back to the first tab. Older Streamlit lacks the key.
+TAB_NAMES=["Chart & interpretation","Screener","Replay journal","Learn the calculations","Data & downloads"]
+_tab_kwargs={"key":"main_tabs","on_change":"rerun"} if "key" in inspect.signature(st.tabs).parameters else {}
+tab_chart,tab_screen,tab_replay,tab_learn,tab_data=st.tabs(TAB_NAMES,**_tab_kwargs)
 with tab_chart:
     st.plotly_chart(technical_chart(analyzed,symbol,settings,average,chart_bars),width="stretch")
     a,b=st.columns(2)

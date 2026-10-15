@@ -20,12 +20,17 @@ def seeded_average(series, period, alpha=None):
     # Only leading warm-up gaps are supported. Never silently bridge missing bars.
     if not np.all(np.diff(positions) == 1):
         raise ValueError("Interior gaps must be cleaned before smoothing.")
+    # Work on plain NumPy arrays: per-element .iloc access made the 52-instrument
+    # screener roughly 30x slower than necessary.
+    values = series.to_numpy(dtype=float)
+    out = np.full(len(values), np.nan)
     seed_pos = int(positions[period - 1])
-    previous = float(series.iloc[positions[:period]].mean())
-    result.iloc[seed_pos] = previous
+    previous = float(values[positions[:period]].mean())
+    out[seed_pos] = previous
     for i in positions[period:]:
-        previous = alpha * float(series.iloc[i]) + (1 - alpha) * previous
-        result.iloc[i] = previous
+        previous = alpha * values[i] + (1 - alpha) * previous
+        out[i] = previous
+    result[:] = out
     return result
 
 
