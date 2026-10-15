@@ -1,8 +1,10 @@
-# Tested together on Python 3.12; use Python 3.11 or 3.12.
-streamlit==1.37.1
-pandas==2.2.2
-numpy==1.26.4
-plotly==5.24.1
-openpyxl==3.1.5
-requests==2.32.3
-yfinance==0.2.65
+# Works on Python 3.11-3.14. Streamlit Community Cloud currently defaults to Python 3.14,
+# where the old pins (streamlit 1.37 / pandas 2.2 / numpy 1.26) have no wheels and fail to build.
+# Validated with streamlit 1.66, pandas 3.0, numpy 2.5, plotly 7.1, yfinance 1.7 (23 tests passed).
+streamlit>=1.50,<2
+pandas>=2.3.3,<4
+numpy>=2.3.2,<3
+plotly>=6.0,<8
+openpyxl>=3.1.5,<4
+requests>=2.32,<3
+yfinance>=0.2.65,<2

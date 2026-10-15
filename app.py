@@ -189,7 +189,7 @@ st.caption(f"{symbol} · Latest completed bar: {actual_date} · Daily timeframe 
 
 tab_chart,tab_screen,tab_replay,tab_learn,tab_data=st.tabs(["Chart & interpretation","Screener","Replay journal","Learn the calculations","Data & downloads"])
 with tab_chart:
-    st.plotly_chart(technical_chart(analyzed,symbol,settings,average,chart_bars),use_container_width=True)
+    st.plotly_chart(technical_chart(analyzed,symbol,settings,average,chart_bars),width="stretch")
     a,b=st.columns(2)
     with a:
         st.subheader("Price structure")
@@ -210,7 +210,7 @@ with tab_chart:
     if symbol.startswith("^"):
         st.caption("Spot index volume is not traded share volume. Volume plots and volume-based confirmation are deliberately omitted.")
     with st.expander("Confirmed swings and when they became knowable"):
-        st.dataframe(swings,use_container_width=True,hide_index=True)
+        st.dataframe(swings,width="stretch",hide_index=True)
         st.caption(f"A {settings.swing_window}-bar right-hand confirmation delays availability by that many observations. Labels are never used before KnownOn. This is single-series swing structure, not complete classical Dow Theory confirmation.")
 
 with tab_screen:
@@ -259,7 +259,7 @@ with tab_screen:
             elif filter_name=="Positive ROC":mask=filtered[col].gt(0)
             else:mask=filtered[col].eq(True)
             filtered=filtered.loc[mask]
-        st.dataframe(filtered,use_container_width=True,hide_index=True)
+        st.dataframe(filtered,width="stretch",hide_index=True)
         st.caption(f"{len(filtered)} displayed / {len(screen)} scanned. These are observations, not ranked buy/sell recommendations. Excel includes the full unfiltered scan and status rows.")
     else:
         st.info("Run the screener to calculate this snapshot.")
@@ -281,7 +281,7 @@ with tab_replay:
     if not journal.empty:
         # Rewinding also hides notes written at later cutoffs.
         journal=journal.loc[pd.to_datetime(journal.Date).dt.date<=actual_date]
-        st.dataframe(journal,use_container_width=True,hide_index=True)
+        st.dataframe(journal,width="stretch",hide_index=True)
         st.download_button("Download visible journal CSV",journal.to_csv(index=False).encode(),file_name=f"{symbol}_journal_{actual_date}.csv",mime="text/csv")
     st.caption("Replay cuts data before all computations and exports. Full input histories remain on the server. This is a teaching replay, not an examination-security system or a point-in-time investment backtest. Current/reference membership and provider-revised historical prices can cause survivorship or revision bias.")
 
@@ -310,7 +310,7 @@ with tab_learn:
 with tab_data:
     st.subheader("Inspect and download this snapshot")
     st.caption(source_note)
-    st.dataframe(analyzed.tail(80),use_container_width=True)
+    st.dataframe(analyzed.tail(80),width="stretch")
     visible_journal=pd.DataFrame(st.session_state.get(journal_key,[]))
     if not visible_journal.empty:
         visible_journal=visible_journal.loc[pd.to_datetime(visible_journal.Date).dt.date<=actual_date]

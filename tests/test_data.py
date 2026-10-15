@@ -36,3 +36,9 @@ def test_csv_missing_required_headers():
 def test_csv_indices_do_not_acquire_invented_volume():
     text=b'Symbol,Date,Open,High,Low,Close,Volume\n^NSEI,2026-01-02,100,103,99,102,999\n'
     assert read_csv_bundle(text)['^NSEI'].Volume.isna().all()
+
+
+def test_provider_rounding_in_high_low_is_tolerated():
+    text=b'Symbol,Date,Open,High,Low,Close,Volume\nABC,2026-01-02,100,102.99999,99,103,10\n'
+    d=read_csv_bundle(text)['ABC']
+    assert d.High.iloc[0]==103

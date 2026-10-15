@@ -8,10 +8,10 @@ A GitHub-ready Streamlit teaching application for Nifty 50 stocks, the Nifty 50 
 
 ## 1. Create your GitHub repository
 
-Suggested name: **mpa-technical-analysis-lab**.
+Suggested name: **MPA-Technical-Analysis-2026**.
 
 1. Extract the supplied ZIP.
-2. Sign in to [GitHub](https://github.com/trichyravis) and create a new empty repository named `mpa-technical-analysis-lab`.
+2. Sign in to [GitHub](https://github.com/trichyravis) and create a new empty repository named `MPA-Technical-Analysis-2026`.
 3. Upload **the contents inside** `technical-analysis-lab`, so `app.py`, `requirements.txt`, `technical_lab`, `data`, and `.streamlit` are at the repository root. Do not nest the whole folder one level deeper.
 4. Include the hidden `.streamlit` directory: it supplies the matching theme. Also include `.github/workflows/tests.yml` for automated tests. If your browser hides dotfolders, use the Git commands below.
 5. Do not upload a `.venv`, tokens, `.env`, or a real `secrets.toml`.
@@ -24,7 +24,7 @@ git init
 git add .
 git commit -m "Add Mountain Path technical analysis learning lab"
 git branch -M main
-git remote add origin https://github.com/trichyravis/mpa-technical-analysis-lab.git
+git remote add origin https://github.com/trichyravis/MPA-Technical-Analysis-2026.git
 git push -u origin main
 ```
 
@@ -34,18 +34,18 @@ Use your normal GitHub sign-in when asked. No credentials belong in these source
 
 1. Open [Streamlit Community Cloud](https://share.streamlit.io/) and connect your GitHub account.
 2. Select **Create app**.
-3. Repository: `trichyravis/mpa-technical-analysis-lab`.
+3. Repository: `trichyravis/MPA-Technical-Analysis-2026`.
 4. Branch: `main`.
 5. Main file path: **`app.py`**.
-6. In Advanced settings, choose **Python 3.12** (3.11 also supported).
-7. Deploy. Pick an available app name, for example `mpa-technical-analysis-lab`.
+6. In Advanced settings, choose Python 3.12, 3.13 or 3.14 (the default 3.14 works).
+7. Deploy. Pick an available app name, for example `MPA-Technical-Analysis-2026`.
 8. Open the app. The default synthetic mode needs no data account or API key.
 
 The final app address is assigned during deployment. Do not assume the suggested name is available until Streamlit confirms it.
 
 ## 3. Run locally on your Mac
 
-Use Python 3.11 or 3.12:
+Use Python 3.11 to 3.14:
 
 ```bash
 cd "/path/to/technical-analysis-lab"

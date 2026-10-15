@@ -1,8 +1,8 @@
 # Quick start for Prof. V. Ravichandran
 
-1. Extract the ZIP and create `trichyravis/mpa-technical-analysis-lab` on GitHub.
+1. Extract the ZIP and create `trichyravis/MPA-Technical-Analysis-2026` on GitHub.
 2. Upload the folder's **contents**, with `app.py` at the root. Include `.streamlit/config.toml`.
-3. On Streamlit Community Cloud, create an app from that repository, branch `main`, file `app.py`, Python **3.12**.
+3. On Streamlit Community Cloud, create an app from that repository, branch `main`, file `app.py` (any Python 3.12–3.14).
 4. Deploy. Synthetic demo works immediately with both indices and a 50-stock reference watchlist.
 5. Try **Run screener**, **Historical replay**, **Next session**, and **Download Excel workbook**.
 6. For CSV mode use `data/sample_ohlcv.csv`, or upload your permitted market-data CSV with the same headers.

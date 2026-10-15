@@ -1,10 +1,12 @@
 # Validation record
 
-Validated on 15 October 2026 using Python 3.12 and the dependency versions in requirements.txt.
+Validated on 15 October 2026 using Python 3.13 with streamlit 1.66, pandas 3.0, numpy 2.5, plotly 7.1 and yfinance 1.7 (ranges in requirements.txt).
 
 Command: `python -m pytest -q`
 
 Result: **23 passed**.
+
+Earlier release: the original pins (streamlit 1.37.1, pandas 2.2.2, numpy 1.26.4) also passed on Python 3.12, but they have no wheels for Python 3.13/3.14, so a Streamlit Community Cloud deployment on its default Python failed while building pandas/pillow from source. The requirements now use version ranges that install on Python 3.11–3.14.
 
 Coverage includes:
 
@@ -22,4 +24,4 @@ Coverage includes:
 - CSV validation and missing index volume.
 - Streamlit demo page, replay controls, next-session step and 52-instrument screener.
 
-All tests are offline. Yahoo fetching and official NSE constituent-list refresh are implemented but were not live-verified in this environment. No real-time feed, broker login or intraday service is included in release one. The visual styling was derived from the source of the requested rbi-spread-app reference; full browser/mobile visual QA remains a deployment check.
+All tests are offline. Yahoo fetching and the official NSE constituent-list refresh are implemented but not live-verified in CI. No real-time feed, broker login or intraday service is included in release one.

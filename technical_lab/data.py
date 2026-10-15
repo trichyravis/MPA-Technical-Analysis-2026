@@ -30,8 +30,15 @@ def normalize_frame(frame, is_index=False):
         d[k]=pd.to_numeric(d[k],errors="raise")
     if not np.isfinite(d[OHLC].to_numpy()).all() or (d[OHLC]<=0).any().any():
         raise ValueError("OHLC prices must be finite and positive; no missing bars accepted.")
-    if ((d.High<d[["Open","Close","Low"]].max(axis=1)) | (d.Low>d[["Open","Close","High"]].min(axis=1))).any():
-        raise ValueError("OHLC values are inconsistent: check each bar's high and low.")
+    # Allow provider rounding (e.g. Yahoo bars where High is 0.0001 below Close) but
+    # still reject genuinely inconsistent bars. Tolerance: 0.01% of the bar's price.
+    tol=d[OHLC].max(axis=1)*1e-4
+    bad=(d.High<d[["Open","Close","Low"]].max(axis=1)-tol) | (d.Low>d[["Open","Close","High"]].min(axis=1)+tol)
+    if bad.any():
+        raise ValueError(f"OHLC values are inconsistent on {bad.sum()} bar(s), first {d.index[bad][0]:%Y-%m-%d}: "
+                         "check each bar's high and low.")
+    d["High"]=d[OHLC].max(axis=1)
+    d["Low"]=d[OHLC].min(axis=1)
     d["Volume"]=pd.to_numeric(d.get("Volume",pd.Series(np.nan,index=d.index)),errors="coerce")
     if (d.Volume.dropna()<0).any():
         raise ValueError("Volume cannot be negative.")
