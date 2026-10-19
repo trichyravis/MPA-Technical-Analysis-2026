@@ -90,9 +90,18 @@ def summary_row(symbol, d, settings=Settings()):
         v=row.get(k,np.nan)
         return None if pd.isna(v) else float(v)
     ma200=value("SMA_200")
+    ma50=value("SMA_50")
+    ema=value(f"EMA_{settings.short_ma}")
+    macd,signal=value("MACD"),value("MACD_Signal")
+    above=lambda ref:None if ref is None else bool(row.Close>ref)
     return {"Symbol":symbol,"Date":d.index[-1].strftime("%Y-%m-%d"),"Close":value("Close"),
             "Change %":value("Return_1D_Pct"),"RSI":value("RSI"),"ROC %":value("ROC"),
-            "MACD hist":value("MACD_Histogram"),"Above SMA200":None if ma200 is None else bool(row.Close>ma200),
+            "MACD hist":value("MACD_Histogram"),"Above SMA200":above(ma200),
+            "Above SMA50":above(ma50),"Above short EMA":above(ema),
+            "SMA50 above SMA200":None if ma50 is None or ma200 is None else bool(ma50>ma200),
+            "MACD above signal":None if macd is None or signal is None else bool(macd>=signal),
+            "MACD cross up today":bool(row.get("MACD_Cross_Up",False)),
+            "MACD cross down today":bool(row.get("MACD_Cross_Down",False)),
             "Golden cross today":bool(row.Golden_Cross),"Death cross today":bool(row.Death_Cross),
             "Latest 50/200 cross":cross,"Cross date":date,
             "Breakout event":bool(row.Breakout_Event),"Breakdown event":bool(row.Breakdown_Event),

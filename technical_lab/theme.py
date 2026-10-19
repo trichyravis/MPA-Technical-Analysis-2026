@@ -92,3 +92,59 @@ def footer():
             f'Educational analysis only. Data source and cutoff are stated in the app. '
             f'No order placement or automated investment advice.</div>')
     st.html(_card(body, "margin-top:28px;"))
+
+
+TONES = {
+    "positive": ("#37CDB0", "▲ Strength"),
+    "negative": ("#FF6B7C", "▼ Weakness"),
+    "neutral": (LIGHT_BLUE, "◆ Neutral"),
+    "waiting": (MUTED, "… Warming up"),
+}
+
+
+def _esc(text):
+    return (str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+def reading_cards(cards, counts, verdict):
+    """Plain-English indicator cards with a strength/weakness tally."""
+    tally = "".join(
+        f'<span style="{NOSELECT}{_text(TONES[k][0])}font-size:13px;font-weight:700;margin-right:18px;">'
+        f'{TONES[k][1]}: {counts.get(k, 0)}</span>' for k in ("positive", "negative", "neutral", "waiting"))
+    head = (f'<div style="{NOSELECT}background:{CARD};border:1px solid rgba(255,215,0,.3);border-radius:14px;'
+            f'padding:14px 18px;margin-bottom:12px;font-family:Arial,sans-serif;">'
+            f'<div style="{NOSELECT}{_text(GOLD)}font-size:15px;font-weight:700;margin-bottom:6px;">{_esc(verdict)}</div>'
+            f'<div style="{NOSELECT}">{tally}</div></div>')
+    items = []
+    for c in cards:
+        color, label = TONES.get(c["tone"], TONES["neutral"])
+        items.append(
+            f'<div style="{NOSELECT}background:{CARD};border:1px solid rgba(255,255,255,.08);border-left:4px solid {color};'
+            f'border-radius:12px;padding:14px 16px;font-family:Arial,sans-serif;">'
+            f'<div style="{NOSELECT}display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+            f'<span style="{NOSELECT}{_text(MUTED)}font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">{_esc(c["lens"])}</span>'
+            f'<span style="{NOSELECT}{_text(color)}font-size:12px;font-weight:700;">{label}</span></div>'
+            f'<div style="{NOSELECT}{_text("#ffffff")}font-size:15px;font-weight:700;line-height:1.4;margin:6px 0;">{_esc(c["headline"])}</div>'
+            f'<div style="{NOSELECT}{_text(TXT)}font-size:13px;line-height:1.55;">{_esc(c["explanation"])}</div>'
+            f'<div style="{NOSELECT}{_text(LIGHT_BLUE)}font-size:12px;line-height:1.5;margin-top:8px;">'
+            f'<span style="{NOSELECT}{_text(GOLD)}font-weight:700;">What would change this: </span>{_esc(c["watch"])}</div></div>')
+    grid = (f'<div style="{NOSELECT}display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;">'
+            + "".join(items) + '</div>')
+    st.html(head + grid)
+
+
+def learning_step_card(item):
+    """One step of the six-part learning path, linking to the matching website lesson."""
+    row = lambda label, text: (
+        f'<div style="{NOSELECT}margin-top:8px;"><span style="{NOSELECT}{_text(GOLD)}font-size:12px;font-weight:700;'
+        f'letter-spacing:1px;">{label} </span><span style="{NOSELECT}{_text(TXT)}font-size:14px;line-height:1.55;">{_esc(text)}</span></div>')
+    html = (f'<div style="{NOSELECT}background:{CARD};border:1px solid rgba(255,215,0,.22);border-radius:14px;'
+            f'padding:16px 18px;margin-bottom:12px;font-family:Arial,sans-serif;">'
+            f'<div style="{NOSELECT}display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
+            f'<span style="{NOSELECT}{_text(BLUE)}background:{GOLD};border-radius:50%;width:30px;height:30px;'
+            f'display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;">{item["step"]}</span>'
+            f'<span style="{NOSELECT}{_text("#ffffff")}font-size:17px;font-weight:700;">{_esc(item["title"])}</span>'
+            f'<a href="{item["url"]}" target="_blank" rel="noopener noreferrer" style="{_text(GOLD)}font-size:13px;'
+            f'font-weight:600;text-decoration:none;margin-left:auto;">Read the lesson ↗</a></div>'
+            + row("THE IDEA", item["idea"]) + row("LOOK AT", item["look"]) + row("TRY THIS", item["try"]) + '</div>')
+    st.html(html)

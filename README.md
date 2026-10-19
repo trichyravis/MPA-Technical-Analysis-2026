@@ -161,6 +161,19 @@ Doji: body ≤10% of nonzero range. Hammer: after a prior decline, lower wick �
 
 “Higher highs and higher lows” here describes **one instrument's confirmed closing-price swings**. It does not claim classical Dow Theory confirmation between industrial and transportation market averages.
 
+## For learners: guided mode
+
+New learners should open the **Start here** tab first. It follows the six lessons of the Academy's *Let Us Learn Technical Analysis* series. Each step has **The idea**, **Look at** (where to look on the chart) and **Try this** (a small task), plus a link to the full lesson.
+
+- **Chart layers** (sidebar) shows one idea at a time: *Candles only*, *Price & averages*, *Support & resistance* or *Momentum*. *Everything* is the original full chart.
+- **Read this chart in plain English** (under the chart) explains the latest trend, swing structure, RSI, MACD, ROC, levels and candle. Each card also says what would change that reading, and a tally shows whether the indicators agree or disagree.
+- **Check yourself** asks questions whose answers are worked out from the chart on screen. A fresh set appears when you change the instrument or step the replay date.
+- **Learn the calculations** now shows *today's numbers, step by step* (SMA, EMA, ROC, RSI, MACD, support/resistance) using the same values the chart plots.
+- **Live summary** (Screener tab): after each scan, one row per observation — SMA 50/200, short EMA, golden/death-cross state and events, RSI ≥ 70 / ≤ 30 / above 50, MACD above signal and crosses, positive/negative ROC, breakouts, breakdowns and candle setups — with how many instruments match, the share and which ones, plus a market-breadth line. It uses exactly the same rules as **Filter observations**, so counts always agree. It is also exported as the *Screener Summary* sheet in Excel.
+- Hover over the **?** beside any headline number or sidebar control for a one-line explanation. A glossary sits at the bottom of **Start here**.
+
+All learner text reads only the revealed rows, so explanations and quiz answers respect Historical replay. They describe indicator readings; they are not recommendations.
+
 ## 7. Historical replay teaching workflow
 
 1. Select an instrument and enable **Historical replay**.
@@ -215,7 +228,9 @@ technical_lab/universe.py      Indices and constituent list loading
 technical_lab/indicators.py    SMA/EMA, ROC, Wilder RSI, MACD, prior levels
 technical_lab/signals.py       Crossovers, candle setups, confirmed swings
 technical_lab/replay.py        Data cutoff and completed-bar guard
-technical_lab/charts.py        Plotly candlestick and indicator chart
+technical_lab/charts.py        Plotly candlestick and indicator chart, with focus layers
+technical_lab/learning.py      Learning path, plain-English readings, worked numbers, quiz
+technical_lab/observations.py  One rule set for screener filters and the live summary
 technical_lab/exports.py       Styled Excel snapshot
 technical_lab/config.py        Validated indicator settings
 technical_lab/provider_contract.py   Replacement daily-feed interface

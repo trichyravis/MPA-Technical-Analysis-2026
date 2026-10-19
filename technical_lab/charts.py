@@ -9,12 +9,24 @@ TEAL="#37CDB0"
 RED="#FF6B7C"
 
 
-def technical_chart(d, symbol, settings=Settings(), average="Both", bars=180):
+LAYERS=["Everything","Candles only","Price & averages","Support & resistance","Momentum (ROC, RSI, MACD)"]
+
+
+def technical_chart(d, symbol, settings=Settings(), average="Both", bars=180, layers="Everything"):
+    """layers lets learners focus on one idea; 'Everything' is the original full chart."""
     v=d.tail(bars)
-    volume=v.Volume.notna().any()
-    titles=["Price, averages and prior-window levels",f"ROC({settings.roc_period}) %",
-            f"Wilder RSI({settings.rsi_period})","MACD / signal / histogram"]
-    heights=[.48,.14,.14,.24]
+    show_ma=layers in ("Everything","Price & averages")
+    show_sr=layers in ("Everything","Support & resistance")
+    show_mom=layers in ("Everything","Momentum (ROC, RSI, MACD)")
+    volume=v.Volume.notna().any() and layers=="Everything"
+    if not show_mom:
+        title={"Candles only":"Daily candlesticks","Price & averages":"Price with moving averages",
+               "Support & resistance":f"Price with prior {settings.sr_period}-bar support and resistance"}[layers]
+        titles=[title];heights=[1]
+    else:
+        titles=["Price, averages and prior-window levels" if layers=="Everything" else "Daily candlesticks",f"ROC({settings.roc_period}) %",
+                f"Wilder RSI({settings.rsi_period})","MACD / signal / histogram"]
+        heights=[.48,.14,.14,.24]
     if volume:
         titles.append("Traded volume");heights=[.43,.12,.12,.21,.12]
     fig=make_subplots(rows=len(titles),cols=1,shared_xaxes=True,vertical_spacing=.035,
@@ -23,36 +35,41 @@ def technical_chart(d, symbol, settings=Settings(), average="Both", bars=180):
                                 increasing_line_color=TEAL,decreasing_line_color=RED,name="OHLC"),row=1,col=1)
     for j,n in enumerate([settings.short_ma,settings.fast_ma,settings.slow_ma]):
         for kind,dash in [("SMA","solid"),("EMA","dot")]:
-            if average in ("Both",kind):
+            if show_ma and average in ("Both",kind):
                 fig.add_trace(go.Scatter(x=v.index,y=v[f"{kind}_{n}"],name=f"{kind} {n}",
                                          line=dict(color=[TEAL,GOLD,"#BBA5F5"][j],width=1.5,dash=dash)),row=1,col=1)
     for key,color in [("Support",TEAL),("Resistance",RED)]:
+        if not show_sr:
+            continue
         fig.add_trace(go.Scatter(x=v.index,y=v[key],name=f"Prior {settings.sr_period}-bar {key.lower()}",
                                 line=dict(color=color,dash="dash",width=1)),row=1,col=1)
     for col,label,color,shape in [("Golden_Cross","Golden cross",GOLD,"triangle-up"),
                                  ("Death_Cross","Death cross",RED,"triangle-down")]:
         events=v.loc[v[col]]
+        if not show_ma:
+            continue
         fig.add_trace(go.Scatter(x=events.index,y=events.Close,name=label,mode="markers",
                                 marker=dict(color=color,size=12,symbol=shape)),row=1,col=1)
-    fig.add_trace(go.Scatter(x=v.index,y=v.ROC,name="ROC",line=dict(color=NAVY)),row=2,col=1)
-    fig.add_hline(y=0,line_width=1,line_dash="dot",row=2,col=1)
-    fig.add_trace(go.Scatter(x=v.index,y=v.RSI,name="RSI",line=dict(color=TEAL)),row=3,col=1)
-    for y in [30,50,70]:
-        fig.add_hline(y=y,line_width=1,line_dash="dot",row=3,col=1)
-    fig.update_yaxes(range=[0,100],row=3,col=1)
-    fig.add_trace(go.Bar(x=v.index,y=v.MACD_Histogram,name="MACD histogram",
-                          marker_color=[TEAL if x>=0 else RED for x in v.MACD_Histogram.fillna(0)]),row=4,col=1)
-    fig.add_trace(go.Scatter(x=v.index,y=v.MACD,name="MACD",line=dict(color=TEAL)),row=4,col=1)
-    fig.add_trace(go.Scatter(x=v.index,y=v.MACD_Signal,name="Signal",line=dict(color=GOLD)),row=4,col=1)
-    fig.add_hline(y=0,line_width=1,line_dash="dot",row=4,col=1)
+    if show_mom:
+        fig.add_trace(go.Scatter(x=v.index,y=v.ROC,name="ROC",line=dict(color=NAVY)),row=2,col=1)
+        fig.add_hline(y=0,line_width=1,line_dash="dot",row=2,col=1)
+        fig.add_trace(go.Scatter(x=v.index,y=v.RSI,name="RSI",line=dict(color=TEAL)),row=3,col=1)
+        for y in [30,50,70]:
+            fig.add_hline(y=y,line_width=1,line_dash="dot",row=3,col=1)
+        fig.update_yaxes(range=[0,100],row=3,col=1)
+        fig.add_trace(go.Bar(x=v.index,y=v.MACD_Histogram,name="MACD histogram",
+                              marker_color=[TEAL if x>=0 else RED for x in v.MACD_Histogram.fillna(0)]),row=4,col=1)
+        fig.add_trace(go.Scatter(x=v.index,y=v.MACD,name="MACD",line=dict(color=TEAL)),row=4,col=1)
+        fig.add_trace(go.Scatter(x=v.index,y=v.MACD_Signal,name="Signal",line=dict(color=GOLD)),row=4,col=1)
+        fig.add_hline(y=0,line_width=1,line_dash="dot",row=4,col=1)
     if volume:
         fig.add_trace(go.Bar(x=v.index,y=v.Volume,name="Volume",marker_color="#8BA7BE"),row=5,col=1)
-    fig.update_layout(height=1050 if volume else 950,template="plotly_dark",hovermode="x unified",paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",
+    fig.update_layout(height=(1050 if volume else 950) if show_mom else 620,template="plotly_dark",hovermode="x unified",paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",
                       title=dict(text=f"{symbol} · through {d.index[-1]:%d %b %Y}",y=0.99,yanchor="top"),
                       xaxis_rangeslider_visible=False,
                       # Legend sits above the first subplot title instead of overlapping it.
                       legend=dict(orientation="h",yanchor="bottom",y=1.035,x=0),
-                      margin=dict(l=30,r=20,t=170,b=40),font=dict(family="Arial",color=NAVY))
+                      margin=dict(l=30,r=20,t=170 if layers=="Everything" else 120,b=40),font=dict(family="Arial",color=NAVY))
     fig.update_xaxes(rangeslider_visible=False,showgrid=False)
     return fig
 

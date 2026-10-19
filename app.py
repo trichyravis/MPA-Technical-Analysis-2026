@@ -12,8 +12,12 @@ from technical_lab.universe import reference_universe, fetch_current_constituent
 from technical_lab.replay import as_of, completed_daily_bars, step_session
 from technical_lab.indicators import compute_indicators
 from technical_lab.signals import add_signals, confirmed_swings, swing_structure, summary_row
-from technical_lab.charts import technical_chart
+from technical_lab.charts import technical_chart, LAYERS
+from technical_lab.learning import (LEARNING_PATH, GLOSSARY, METRIC_HELP, read_the_chart,
+                                    evidence_tally, worked_numbers, quiz)
+from technical_lab.theme import reading_cards, learning_step_card
 from technical_lab.exports import excel_bytes
+from technical_lab.observations import NAMES as OBSERVATION_NAMES, observation_mask, observation_summary, breadth_headline
 
 st.set_page_config(page_title="Technical Analysis Lab | Mountain Path Academy",page_icon="📈",layout="wide")
 from technical_lab.theme import apply_theme, header, footer
@@ -89,9 +93,11 @@ with st.sidebar:
         symbols=universe.Symbol.to_list()
         names={r.Symbol:f"{r.Name} ({r.Symbol})" for r in universe.itertuples()}
     symbol=st.selectbox("Instrument",symbols,format_func=lambda k:names[k])
-    average=st.selectbox("Show averages",["Both","SMA","EMA"])
-    chart_bars=st.slider("Visible chart bars",60,500,180,20)
+    layers=st.selectbox("Chart layers",LAYERS,help="Learning one idea at a time? Show only the candles, the moving averages, the support/resistance levels or the momentum panels. 'Everything' shows the full chart.")
+    average=st.selectbox("Show averages",["Both","SMA","EMA"],help="SMA = simple moving average (solid lines). EMA = exponential moving average (dotted lines), which reacts faster to recent prices.")
+    chart_bars=st.slider("Visible chart bars",60,500,180,20,help="About 250 bars is one trading year; 60 bars is roughly three months.")
     with st.expander("Indicator parameters"):
+        st.caption("Defaults are the textbook settings (20/50/200 averages, RSI 14, MACD 12/26/9). Change one at a time and watch what moves.")
         short=int(st.number_input("Short MA",min_value=2,max_value=100,value=20))
         fast=int(st.number_input("Intermediate MA",min_value=3,max_value=250,value=50))
         slow=int(st.number_input("Long MA",min_value=4,max_value=500,value=200))
@@ -145,7 +151,7 @@ if len(full)<2:
 
 # Replay is a GLOBAL cutoff for every chart, screener row and export in this run.
 with st.sidebar:
-    replay=st.checkbox("Historical replay",value=False)
+    replay=st.checkbox("Historical replay",value=False,help="Hide every price after a chosen date, read the chart, write down your view, then step forward one session to see what happened.")
     if replay:
         key="replay_date_"+hashlib.sha1((source_id+symbol).encode()).hexdigest()[:12]
         minimum,maximum=full.index[0].date(),full.index[-1].date()
@@ -183,18 +189,42 @@ def fmt(value,decimals=2):
 
 
 columns=st.columns(5)
-for col,label,value in zip(columns,["Close","Daily change %",f"RSI {settings.rsi_period}",f"ROC {settings.roc_period} %","MACD histogram"],
-                            [latest.Close,latest.Return_1D_Pct,latest.RSI,latest.ROC,latest.MACD_Histogram]):
-    col.metric(label,fmt(value))
+for col,label,value,tip in zip(columns,["Close","Daily change %",f"RSI {settings.rsi_period}",f"ROC {settings.roc_period} %","MACD histogram"],
+                            [latest.Close,latest.Return_1D_Pct,latest.RSI,latest.ROC,latest.MACD_Histogram],
+                            [METRIC_HELP["Close"],METRIC_HELP["Daily change %"],METRIC_HELP["RSI"],METRIC_HELP["ROC"],METRIC_HELP["MACD histogram"]]):
+    col.metric(label,fmt(value),help=tip)
 st.caption(f"{symbol} · Latest completed bar: {actual_date} · Daily timeframe · {len(analyzed)} revealed observations")
 
 # A keyed tab bar keeps the selected tab across reruns, so clicking "Run screener"
 # no longer throws the user back to the first tab. Older Streamlit lacks the key.
-TAB_NAMES=["Chart & interpretation","Screener","Replay journal","Learn the calculations","Data & downloads"]
+TAB_NAMES=["Start here","Chart & interpretation","Check yourself","Screener","Replay journal","Learn the calculations","Data & downloads"]
 _tab_kwargs={"key":"main_tabs","on_change":"rerun"} if "key" in inspect.signature(st.tabs).parameters else {}
-tab_chart,tab_screen,tab_replay,tab_learn,tab_data=st.tabs(TAB_NAMES,**_tab_kwargs)
+tab_start,tab_chart,tab_quiz,tab_screen,tab_replay,tab_learn,tab_data=st.tabs(TAB_NAMES,**_tab_kwargs)
+cards=read_the_chart(analyzed,settings,swings)
+
+with tab_start:
+    st.subheader("New to technical analysis? Start here")
+    st.markdown(
+        "This lab lets you **see** each idea from the Mountain Path *Let Us Learn Technical Analysis* series on real-looking charts. "
+        "Work through the six steps in order; each one tells you what to look at and gives you a small task.\n\n"
+        "**How to use the lab in four moves:** 1) pick an instrument in the sidebar · "
+        "2) use **Chart layers** to show one idea at a time · "
+        "3) read **Read this chart in plain English** under the chart · "
+        "4) test yourself in **Check yourself**, or practise with **Historical replay**.")
+    for item in LEARNING_PATH:
+        learning_step_card(item)
+    with st.expander("Glossary · every term in plain words"):
+        st.dataframe(pd.DataFrame(GLOSSARY.items(),columns=["Term","Meaning"]),width="stretch",hide_index=True)
+    st.caption("Educational descriptions of indicator readings, not buy or sell recommendations.")
+
 with tab_chart:
-    st.plotly_chart(technical_chart(analyzed,symbol,settings,average,chart_bars),width="stretch")
+    st.plotly_chart(technical_chart(analyzed,symbol,settings,average,chart_bars,layers),width="stretch")
+    st.subheader("Read this chart in plain English")
+    counts,verdict=evidence_tally(cards)
+    reading_cards(cards,counts,verdict)
+    st.caption("Each card describes what one indicator shows on the latest revealed day and what would change it. "
+               "Indicators often disagree; weighing them is the skill. These are descriptions, not recommendations.")
+    st.markdown("#### Technical detail")
     a,b=st.columns(2)
     with a:
         st.subheader("Price structure")
@@ -217,6 +247,28 @@ with tab_chart:
     with st.expander("Confirmed swings and when they became knowable"):
         st.dataframe(swings,width="stretch",hide_index=True)
         st.caption(f"A {settings.swing_window}-bar right-hand confirmation delays availability by that many observations. Labels are never used before KnownOn. This is single-series swing structure, not complete classical Dow Theory confirmation.")
+
+with tab_quiz:
+    st.subheader("Check yourself on this chart")
+    st.caption(f"{symbol} · {actual_date}. Answers are worked out from the chart you are looking at, so they change with the instrument and replay date.")
+    questions=quiz(analyzed,settings,swings)
+    if not questions:
+        st.info("Not enough history for questions yet. Step forward in replay or choose a longer history.")
+    qkey="quiz_"+hashlib.sha1((source_id+symbol+str(actual_date)).encode()).hexdigest()[:12]
+    with st.form(qkey):
+        picks=[st.radio(f"Q{i+1}. {q['q']}",q["options"],index=None,key=f"{qkey}_{i}") for i,q in enumerate(questions)]
+        checked=st.form_submit_button("Check my answers",type="primary")
+    if checked:
+        score=0
+        for i,(q,pick) in enumerate(zip(questions,picks)):
+            if pick==q["answer"]:
+                score+=1;st.success(f"Q{i+1}. Correct — {q['answer']}. {q['why']}")
+            elif pick is None:
+                st.info(f"Q{i+1}. Not answered. The answer is {q['answer']}. {q['why']}")
+            else:
+                st.error(f"Q{i+1}. Not quite — the answer is {q['answer']}. {q['why']}")
+        st.metric("Your score",f"{score} / {len(questions)}")
+        st.caption("Change the instrument or step the replay date forward for a fresh set of answers.")
 
 with tab_screen:
     st.subheader("Daily screener")
@@ -255,15 +307,22 @@ with tab_screen:
         screen=pd.DataFrame(rows)
         st.session_state.screen_record={"context":context,"table":screen}
     if not screen.empty:
-        filter_name=st.selectbox("Filter observations",["All","Above SMA200","Golden cross today","Death cross today","RSI ≥ 70","RSI ≤ 30","Positive ROC","Breakout event","Breakdown event"])
-        filtered=screen.copy()
-        col={"RSI ≥ 70":"RSI","RSI ≤ 30":"RSI","Positive ROC":"ROC %"}.get(filter_name,filter_name)
-        if filter_name!="All" and col in filtered:
-            if filter_name=="RSI ≥ 70":mask=filtered[col].ge(70)
-            elif filter_name=="RSI ≤ 30":mask=filtered[col].le(30)
-            elif filter_name=="Positive ROC":mask=filtered[col].gt(0)
-            else:mask=filtered[col].eq(True)
-            filtered=filtered.loc[mask]
+        summary_table=observation_summary(screen)
+        st.markdown(f"#### Live summary · {len(screen)} instruments · through {actual_date}")
+        headline=breadth_headline(summary_table)
+        if headline:
+            st.caption("Market breadth: "+headline+".")
+        st.dataframe(summary_table,width="stretch",hide_index=True,
+                     column_config={
+                         "Matching":st.column_config.NumberColumn("Matching",help="Instruments showing this observation"),
+                         "Measured":st.column_config.NumberColumn("Measured",help="Instruments with enough history to calculate it"),
+                         "Share":st.column_config.ProgressColumn("Share of measured",format="percent",min_value=0,max_value=1),
+                         "Instruments":st.column_config.TextColumn("Instruments",width="large"),
+                         "Meaning":st.column_config.TextColumn("What it means",width="large")})
+        st.caption("Each row uses exactly the same rule as the matching option in Filter observations below, so the counts agree. "
+                   "It refreshes every time you run the screener, and in replay it reflects the replay date.")
+        filter_name=st.selectbox("Filter observations",["All",*OBSERVATION_NAMES])
+        filtered=screen if filter_name=="All" else screen.loc[observation_mask(screen,filter_name)]
         st.dataframe(filtered,width="stretch",hide_index=True)
         st.caption(f"{len(filtered)} displayed / {len(screen)} scanned. These are observations, not ranked buy/sell recommendations. Excel includes the full unfiltered scan and status rows.")
     else:
@@ -301,6 +360,19 @@ with tab_learn:
 **Support/resistance** = minimum/maximum of the previous n bars, excluding the tested bar. Select High/Low or Close.  
 **Golden/death cross** = a new crossing of SMA50 and SMA200. An above-average state is not a new event every day.
 """)
+    st.markdown(f"#### Today's numbers, step by step · {symbol} · {actual_date}")
+    st.caption("The same formulas applied to the latest revealed day. Each result matches the value the app plots.")
+    worked=worked_numbers(analyzed,settings)
+    if not worked:
+        st.info("Indicators are still warming up for this date.")
+    for name,block in worked.items():
+        with st.expander(block["title"],expanded=(name=="SMA")):
+            st.table(pd.DataFrame(block["rows"],columns=["Step","Value"]))
+            if name=="SMA":
+                closes=block["closes"].rename("Close").to_frame()
+                closes.index=closes.index.strftime("%d %b %Y")
+                st.caption(f"The {len(closes)} closes being averaged:")
+                st.dataframe(closes.T,width="stretch")
     with st.expander("Exact candle rules"):
         st.write("Doji: body ≤ 10% of nonzero range. Hammer: prior close below its value three intervals earlier, lower wick ≥ 2× body, upper wick ≤ body, body > 10% of range. Shooting star mirrors this after an advance. Engulfing: opposite-colour second body contains the previous body after a corresponding prior move. Endpoint equality qualifies. Setups need an independently stated confirmation rule.")
     st.markdown("""
@@ -323,7 +395,8 @@ with tab_data:
               "Replay":str(replay),"Timeframe":"Daily","Observation count":len(analyzed),
               "Export generated IST":str(pd.Timestamp.now(tz="Asia/Kolkata")),
               "Universe":st.session_state.get("universe_status","Bundled reference, not historical membership")}
-    workbook=excel_bytes(analyzed,settings,metadata,screen=screen,swings=swings,journal=visible_journal)
+    workbook=excel_bytes(analyzed,settings,metadata,screen=screen,swings=swings,journal=visible_journal,
+                         summary=observation_summary(screen) if not screen.empty else None)
     st.download_button("Download Excel workbook",workbook,file_name=f"{symbol.replace('^','')}_technical_analysis_{actual_date}.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     st.download_button("Download revealed indicators CSV",analyzed.to_csv().encode(),file_name=f"{symbol}_indicators_{actual_date}.csv",mime="text/csv")
