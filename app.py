@@ -17,6 +17,7 @@ from technical_lab.learning import (LEARNING_PATH, GLOSSARY, METRIC_HELP, read_t
                                     evidence_tally, worked_numbers, quiz)
 from technical_lab.theme import reading_cards, learning_step_card
 from technical_lab.exports import excel_bytes
+from technical_lab.observations import NAMES as OBSERVATION_NAMES, observation_mask, observation_summary, breadth_headline
 
 st.set_page_config(page_title="Technical Analysis Lab | Mountain Path Academy",page_icon="📈",layout="wide")
 from technical_lab.theme import apply_theme, header, footer
@@ -306,15 +307,22 @@ with tab_screen:
         screen=pd.DataFrame(rows)
         st.session_state.screen_record={"context":context,"table":screen}
     if not screen.empty:
-        filter_name=st.selectbox("Filter observations",["All","Above SMA200","Golden cross today","Death cross today","RSI ≥ 70","RSI ≤ 30","Positive ROC","Breakout event","Breakdown event"])
-        filtered=screen.copy()
-        col={"RSI ≥ 70":"RSI","RSI ≤ 30":"RSI","Positive ROC":"ROC %"}.get(filter_name,filter_name)
-        if filter_name!="All" and col in filtered:
-            if filter_name=="RSI ≥ 70":mask=filtered[col].ge(70)
-            elif filter_name=="RSI ≤ 30":mask=filtered[col].le(30)
-            elif filter_name=="Positive ROC":mask=filtered[col].gt(0)
-            else:mask=filtered[col].eq(True)
-            filtered=filtered.loc[mask]
+        summary_table=observation_summary(screen)
+        st.markdown(f"#### Live summary · {len(screen)} instruments · through {actual_date}")
+        headline=breadth_headline(summary_table)
+        if headline:
+            st.caption("Market breadth: "+headline+".")
+        st.dataframe(summary_table,width="stretch",hide_index=True,
+                     column_config={
+                         "Matching":st.column_config.NumberColumn("Matching",help="Instruments showing this observation"),
+                         "Measured":st.column_config.NumberColumn("Measured",help="Instruments with enough history to calculate it"),
+                         "Share":st.column_config.ProgressColumn("Share of measured",format="percent",min_value=0,max_value=1),
+                         "Instruments":st.column_config.TextColumn("Instruments",width="large"),
+                         "Meaning":st.column_config.TextColumn("What it means",width="large")})
+        st.caption("Each row uses exactly the same rule as the matching option in Filter observations below, so the counts agree. "
+                   "It refreshes every time you run the screener, and in replay it reflects the replay date.")
+        filter_name=st.selectbox("Filter observations",["All",*OBSERVATION_NAMES])
+        filtered=screen if filter_name=="All" else screen.loc[observation_mask(screen,filter_name)]
         st.dataframe(filtered,width="stretch",hide_index=True)
         st.caption(f"{len(filtered)} displayed / {len(screen)} scanned. These are observations, not ranked buy/sell recommendations. Excel includes the full unfiltered scan and status rows.")
     else:
@@ -387,7 +395,8 @@ with tab_data:
               "Replay":str(replay),"Timeframe":"Daily","Observation count":len(analyzed),
               "Export generated IST":str(pd.Timestamp.now(tz="Asia/Kolkata")),
               "Universe":st.session_state.get("universe_status","Bundled reference, not historical membership")}
-    workbook=excel_bytes(analyzed,settings,metadata,screen=screen,swings=swings,journal=visible_journal)
+    workbook=excel_bytes(analyzed,settings,metadata,screen=screen,swings=swings,journal=visible_journal,
+                         summary=observation_summary(screen) if not screen.empty else None)
     st.download_button("Download Excel workbook",workbook,file_name=f"{symbol.replace('^','')}_technical_analysis_{actual_date}.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     st.download_button("Download revealed indicators CSV",analyzed.to_csv().encode(),file_name=f"{symbol}_indicators_{actual_date}.csv",mime="text/csv")

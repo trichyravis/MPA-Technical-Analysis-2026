@@ -12,7 +12,7 @@ def _safe(d):
     return d
 
 
-def excel_bytes(analyzed, settings, metadata, screen=None, swings=None, journal=None):
+def excel_bytes(analyzed, settings, metadata, screen=None, swings=None, journal=None, summary=None):
     """Only pass already cutoff-truncated frames. The export never fetches data."""
     out=BytesIO()
     raw=analyzed[["Open","High","Low","Close","Volume"]].reset_index()
@@ -34,6 +34,9 @@ def excel_bytes(analyzed, settings, metadata, screen=None, swings=None, journal=
     ],columns=["Concept","Explanation"])
     sheets={"Read Me":notes,"Parameters":pd.DataFrame(asdict(settings).items(),columns=["Parameter","Value"]),
             "Metadata":pd.DataFrame(metadata.items(),columns=["Field","Value"]),"OHLCV":raw,"Indicators":indicators}
+    if summary is not None and not summary.empty:
+        # Placed straight after Read Me so the scan's headline counts are the first thing seen.
+        sheets={"Read Me":sheets.pop("Read Me"),"Screener Summary":summary.copy(),**sheets}
     for name,data in [("Screener",screen),("Confirmed Swings",swings),("Replay Journal",journal)]:
         if data is not None and not data.empty:
             sheets[name]=data.copy()
@@ -52,7 +55,7 @@ def excel_bytes(analyzed, settings, metadata, screen=None, swings=None, journal=
                 ws.column_dimensions[letter].width=min(max(width+2,14),65)
             for row in ws.iter_rows(min_row=2):
                 for cell in row:
-                    cell.alignment=Alignment(vertical="top",wrap_text=name in {"Read Me","Metadata"})
+                    cell.alignment=Alignment(vertical="top",wrap_text=name in {"Read Me","Metadata","Screener Summary"})
                     if isinstance(cell.value,float):
-                        cell.number_format="#,##0.0000"
+                        cell.number_format="0.0%" if name=="Screener Summary" else "#,##0.0000"
     return out.getvalue()
